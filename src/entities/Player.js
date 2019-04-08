@@ -1,7 +1,8 @@
 import * as PIXI from 'pixi.js';
 import hotkeys from 'hotkeys-js';
 import TWEEN from '@tweenjs/tween.js';
-import {tileWidth, tileHeight} from './config';
+
+import {tileWidth, tileHeight} from '../config';
 
 const resources = PIXI.loader.resources,
       Sprite = PIXI.Sprite;
@@ -22,7 +23,7 @@ export default class Player {
   }
 
   setSprite() {
-    const sprite = new Sprite(resources['assets/captain_america.png'].texture);
+    const sprite = new Sprite(resources['CaptainAmerica'].texture);
     sprite.anchor.set(0.5);
     sprite.position.set(tileWidth/2, tileHeight/2);
     sprite.width = 64;

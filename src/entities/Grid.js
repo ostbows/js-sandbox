@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
-import {tileWidth, tileHeight} from './config';
+
+import {tileWidth, tileHeight} from '../config';
 
 const resources = PIXI.loader.resources,
       Sprite = PIXI.Sprite;
@@ -23,7 +24,7 @@ export default class Grid {
           square = new Sprite();
           row.push(1);
         } else {
-          square = new Sprite(resources['assets/white_square.jpg'].texture);
+          square = new Sprite(resources['WhiteSquare'].texture);
           row.push(0);
         }
         square.width = tileWidth;
