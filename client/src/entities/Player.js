@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 import hotkeys from 'hotkeys-js';
 import TWEEN from '@tweenjs/tween.js';
 
-import {tileWidth, tileHeight} from '../config';
+import {tileWidth, tileHeight, playerTweenTime} from '../config';
 
 const resources = PIXI.loader.resources,
       Sprite = PIXI.Sprite;
@@ -75,11 +75,13 @@ export default class Player {
   }
 
   getTweenTime(path) {
-    let tweenTime = 1000;
+    let tweenTime = playerTweenTime;
+
+    if (!path.length) return tweenTime;
+
     let distance = this.getDistanceToNextTile(path);
 
-    const pathOrigin = path[0];
-    path.shift();
+    const pathOrigin = path.shift();
 
     if (distance.x > 0 || distance.y > 0) {
       let timeMultiplier = distance.x/tileWidth + distance.y/tileHeight;
@@ -99,7 +101,6 @@ export default class Player {
   }
 
   tweenPath(path) {
-    //Bug: click on player
     const tweenTime = this.getTweenTime(path);
 
     if (path.length) {

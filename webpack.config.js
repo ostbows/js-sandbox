@@ -6,7 +6,7 @@ const CleanWebpackPlugin = require('clean-webpack-plugin');
 module.exports = {
   mode: 'development',
   entry: {
-    app: './src/index.js'
+    app: './client/src/index.js'
   },
   devtool: 'inline-source-map',
   devServer: {
@@ -32,7 +32,7 @@ module.exports = {
     rules: [
       {
         test: /\.(png|svg|jpg|gif)$/,
-        include: path.resolve(__dirname, 'src'),
+        include: path.resolve(__dirname, 'client/src'),
         loader: 'file-loader',
         options: {
           name: 'img/[contenthash].[ext]'

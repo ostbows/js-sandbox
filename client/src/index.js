@@ -8,7 +8,7 @@ import Player from './entities/Player';
 import level0 from './levels/level0';
 import CaptainAmericaPng from './assets/captain_america.png';
 
-const app = new PIXI.Application(800, 600);
+const app = new PIXI.Application(320, 320);
 document.body.appendChild(app.view);
 
 const easystar = new EasyStar.js();
