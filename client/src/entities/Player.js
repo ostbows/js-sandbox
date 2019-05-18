@@ -1,5 +1,4 @@
 import * as PIXI from 'pixi.js';
-import hotkeys from 'hotkeys-js';
 import TWEEN from '@tweenjs/tween.js';
 
 import {tileWidth, tileHeight, playerTweenTime} from '../config';
@@ -49,11 +48,13 @@ export default class Player {
       }, 50);
     });
 
-    hotkeys('space', event => {
-      event.preventDefault();
-      this.cancelPath = true;
-      this.easystar.cancelPath(this.pathId);
-    });
+    document.body.onkeyup = e => {
+      if (e.keyCode == 32) { // spacebar
+        e.preventDefault();
+        this.cancelPath = true;
+        this.easystar.cancelPath(this.pathId);
+      }
+    }
   }
 
   findPath(destination) {
@@ -67,10 +68,18 @@ export default class Player {
       });
   }
 
-  getDistanceToNextTile(path) {
+  getPathTileOrigo(path) {
     return {
-      x: Math.abs(this.sprite.x - (path[0].x*tileWidth+32)),
-      y: Math.abs(this.sprite.y - (path[0].y*tileHeight+32))
+      x: path[0].x*tileWidth + tileWidth/2,
+      y: path[0].y*tileHeight + tileHeight/2
+    }
+  }
+
+  getDistanceToNextTile(path) {
+    const pathTileOrigo = this.getPathTileOrigo(path);
+    return {
+      x: Math.abs(this.sprite.x - pathTileOrigo.x),
+      y: Math.abs(this.sprite.y - pathTileOrigo.y)
     };
   }
 
@@ -117,10 +126,9 @@ export default class Player {
         })
         .onComplete(() => this.tweenPath(path));
 
-      tween.to({
-        x: path[0].x*tileWidth+tileWidth/2,
-        y: path[0].y*tileHeight+tileHeight/2
-      }, tweenTime).start();
+      tween
+        .to(this.getPathTileOrigo(path), tweenTime)
+        .start();
     } else {
       this.pathId = null;
     }
