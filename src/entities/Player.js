@@ -17,7 +17,7 @@ export default class Player {
     this.cancelPath = false;
   }
 
-  start() {
+  init() {
     this.setSprite();
     this.bindEvents();
   }
@@ -26,8 +26,8 @@ export default class Player {
     const sprite = new Sprite(resources['CaptainAmerica'].texture);
     sprite.anchor.set(0.5);
     sprite.position.set(tileWidth/2, tileHeight/2);
-    sprite.width = 64;
-    sprite.height = 64;
+    sprite.width = 50;
+    sprite.height = 50;
 
     this.app.stage.addChild(sprite);
     this.sprite = sprite;
@@ -67,24 +67,59 @@ export default class Player {
       });
   }
 
-  tweenPath(path) {
+  getDistanceToNextTile(path) {
+    return {
+      x: Math.abs(this.sprite.x - (path[0].x*tileWidth+32)),
+      y: Math.abs(this.sprite.y - (path[0].y*tileHeight+32))
+    };
+  }
+
+  getTweenTime(path) {
+    let tweenTime = 1000;
+    let distance = this.getDistanceToNextTile(path);
+
+    const pathOrigin = path[0];
     path.shift();
+
+    if (distance.x > 0 || distance.y > 0) {
+      let timeMultiplier = distance.x/tileWidth + distance.y/tileHeight;
+
+      distance = this.getDistanceToNextTile(path);
+
+      if (distance.x > 0 && distance.y > 0) {
+        path.unshift(pathOrigin);
+      } else {
+        timeMultiplier = distance.x/tileWidth + distance.y/tileHeight;
+      }
+
+      tweenTime *= timeMultiplier;
+    }
+
+    return tweenTime;
+  }
+
+  tweenPath(path) {
+    //Bug: click on player
+    const tweenTime = this.getTweenTime(path);
+
     if (path.length) {
       const coords = {x: this.sprite.x, y: this.sprite.y};
       const tween = new TWEEN.Tween(coords)
-        .onUpdate(() => this.sprite.position.set(coords.x, coords.y))
-        .onComplete(() => {
+        .onUpdate(() => {
           if (this.cancelPath) {
             this.cancelPath = false;
             this.pathId = null;
+            tween.stop();
           } else {
-            this.tweenPath(path);
+            this.sprite.position.set(coords.x, coords.y);
           }
-        });
+        })
+        .onComplete(() => this.tweenPath(path));
+
       tween.to({
         x: path[0].x*tileWidth+tileWidth/2,
         y: path[0].y*tileHeight+tileHeight/2
-      }, 1000).start();
+      }, tweenTime).start();
     } else {
       this.pathId = null;
     }
