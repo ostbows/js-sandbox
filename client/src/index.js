@@ -12,6 +12,9 @@ const app = new PIXI.Application(320, 320);
 document.body.appendChild(app.view);
 
 const easystar = new EasyStar.js();
+easystar.enableDiagonals();
+easystar.disableCornerCutting();
+
 const player = new Player(app, easystar);
 const level = new Level(app, easystar, level0());
 

@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 import TWEEN from '@tweenjs/tween.js';
 
-import {tileWidth, tileHeight, playerTweenTime} from '../config';
+import {tileWidth, tileHeight, pathDuration} from '../config';
 
 const resources = PIXI.loader.resources,
       Sprite = PIXI.Sprite;
@@ -12,8 +12,7 @@ export default class Player {
     this.easystar = easystar;
     this.sprite = null;
     this.pathId = null;
-    this.pathIv = null;
-    this.cancelPath = false;
+    this.path = [];
   }
 
   init() {
@@ -34,102 +33,89 @@ export default class Player {
 
   bindEvents() {
     this.app.renderer.plugins.interaction.on('pointerup', event => {
-      if (!this.pathId) return this.findPath(event.data.global);
-
-      this.cancelPath = true;
-      this.easystar.cancelPath(this.pathId);
-
-      clearInterval(this.pathIv);
-      this.pathIv = setInterval(() => {
-        if (!this.pathId) {
-          clearInterval(this.pathIv);
-          this.findPath(event.data.global);
-        }
-      }, 50);
+      if (!this.pathId) this.findPath(event.data.global);
     });
+  }
 
-    document.body.onkeyup = e => {
-      if (e.keyCode == 32) { // spacebar
-        e.preventDefault();
-        this.cancelPath = true;
-        this.easystar.cancelPath(this.pathId);
+  compressPath(path) {
+    const compressedPath = [];
+
+    let lastDirX = 0;
+    let lastDirY = 0;
+
+    for (let i = 0; i < path.length; i++) {
+      if (i >= path.length - 1) {
+        compressedPath.push(path[i]);
+        break;
       }
+
+      const dirX = path[i+1].x - path[i].x;
+      const dirY = path[i+1].y - path[i].y;
+
+      if (dirX !== lastDirX || dirY !== lastDirY) {
+        compressedPath.push({x: path[i].x, y: path[i].y});
+      }
+
+      lastDirX = dirX;
+      lastDirY = dirY;
+    }
+
+    return compressedPath;
+  }
+
+  addPathDuration(path) {
+    const distUnit = 1;
+
+    for (let i = 1; i < path.length; i++) {
+      let distX = Math.abs(path[i].x - path[i-1].x);
+      let distY = Math.abs(path[i].y - path[i-1].y);
+
+      let duration = pathDuration;
+
+      if (distX > 0 && distY > 0) {
+        duration = Math.sqrt(Math.pow(distX, 2) + Math.pow(distY, 2)) / distUnit * duration;
+      } else {
+        duration = ((distX || distY) / distUnit) * duration;
+      }
+
+      path[i-1].duration = duration;
     }
   }
 
   findPath(destination) {
     this.pathId = this.easystar.findPath(
-      Math.floor(this.sprite.x/tileWidth),
-      Math.floor(this.sprite.y/tileHeight),
-      Math.floor(destination.x/tileWidth),
-      Math.floor(destination.y/tileHeight),
+      Math.floor(this.sprite.x / tileWidth),
+      Math.floor(this.sprite.y / tileHeight),
+      Math.floor(destination.x / tileWidth),
+      Math.floor(destination.y / tileHeight),
       path => {
-        if (path) this.tweenPath(path);
+        if (path) {
+          const compressedPath = this.compressPath(path);
+          this.addPathDuration(compressedPath);
+          this.path = this.path.concat(compressedPath);
+          this.tweenPath();
+        }
       });
   }
 
-  getPathTileOrigo(path) {
+  getTileOrigo(pathNode) {
     return {
-      x: path[0].x*tileWidth + tileWidth/2,
-      y: path[0].y*tileHeight + tileHeight/2
+      x: pathNode.x * tileWidth + tileWidth / 2,
+      y: pathNode.y * tileHeight + tileHeight / 2
     }
   }
 
-  getDistanceToNextTile(path) {
-    const pathTileOrigo = this.getPathTileOrigo(path);
-    return {
-      x: Math.abs(this.sprite.x - pathTileOrigo.x),
-      y: Math.abs(this.sprite.y - pathTileOrigo.y)
-    };
-  }
-
-  getTweenTime(path) {
-    let tweenTime = playerTweenTime;
-
-    if (!path.length) return tweenTime;
-
-    let distance = this.getDistanceToNextTile(path);
-
-    const pathOrigin = path.shift();
-
-    if (distance.x > 0 || distance.y > 0) {
-      let timeMultiplier = distance.x/tileWidth + distance.y/tileHeight;
-
-      distance = this.getDistanceToNextTile(path);
-
-      if (distance.x > 0 && distance.y > 0) {
-        path.unshift(pathOrigin);
-      } else {
-        timeMultiplier = distance.x/tileWidth + distance.y/tileHeight;
-      }
-
-      tweenTime *= timeMultiplier;
-    }
-
-    return tweenTime;
-  }
-
-  tweenPath(path) {
-    const tweenTime = this.getTweenTime(path);
-
-    if (path.length) {
+  tweenPath() {
+    if (this.path.length > 1) {
+      const from = this.path.shift();
       const coords = {x: this.sprite.x, y: this.sprite.y};
-      const tween = new TWEEN.Tween(coords)
-        .onUpdate(() => {
-          if (this.cancelPath) {
-            this.cancelPath = false;
-            this.pathId = null;
-            tween.stop();
-          } else {
-            this.sprite.position.set(coords.x, coords.y);
-          }
-        })
-        .onComplete(() => this.tweenPath(path));
-
-      tween
-        .to(this.getPathTileOrigo(path), tweenTime)
+      this.tween = new TWEEN.Tween(coords)
+        .onUpdate(() => this.sprite.position.set(coords.x, coords.y))
+        .onComplete(() => this.tweenPath())
+        .to(this.getTileOrigo(this.path[0]), from.duration)
         .start();
     } else {
+      this.path = [];
       this.pathId = null;
     }
   }

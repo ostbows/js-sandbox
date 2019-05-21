@@ -1,5 +1,5 @@
 module.exports = {
-  tileWidth: 64,
-  tileHeight: 64,
-  playerTweenTime: 1000,
+  tileWidth: 32,
+  tileHeight: 32,
+  pathDuration: 500
 };
